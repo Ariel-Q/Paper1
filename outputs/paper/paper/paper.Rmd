@@ -1,0 +1,157 @@
+---
+title: "Factors Related to KSI Traffic Collision and It's Geographical Distribution"
+author: Ariel Xu
+thanks: "Code and data are available at: https://github.com/Ariel-Q/Paper1.git"
+date: "February 06, 2022"
+abstract: "Data were extracted from the City of Toronto open Portal to analyze the causes of KSI accidents and the changes of KSI accidents over time. The data show a decrease in the accident rate between 2006 and 2020. In terms of age, young adults are more likely to be involved in serious traffic accidents. At the same time, dangerous driving, poor vision and poor road conditions may increase the incidence of KSI."
+output: bookdown::pdf_document2
+toc: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(knitr)
+library(tidyverse)
+```
+
+# Introduction
+
+With the development of cities and the progress of technology, traffic accidents have become one of the main causes of injury or death caused by human beings. According to the World Health Organization, about 1.3million people are injured or even killed in traffic accidents every year [@WHO2021Road].
+
+Toronto, one of Canada's largest cities, has a high incidence of traffic accidents. To keep Toronto residents safe on the roads, the Toronto Traffic Service has developed a comprehensive traffic safety strategy with emphasis on education, awareness-raising and law enforcement.[@ServiceToronto] The objective is to provide an effective and efficient traffic policing service to reduce collisions and incidents of bad driving behaviour, thereby reducing injuries and deaths, and ensuring the orderly flow of traffic on Toronto's city streets.
+
+Meanwhile, the Toronto government has a plan that started on 2017 to keep traffic safe. Called the Vision Zero Road Safety Program,[@2017Vision] it seeks to reduce the number of traffic-related deaths and serious injuries on Toronto's streets through data-driven and targeted approaches, with a targeted focus on protecting the most vulnerable people in Toronto's transportation system, including. It also focus on aggressive and distracted driving, as well as motorcyclist safety, depending on factors that can lead to serious injuries and fatal accidents.
+
+The adverse impact of traffic accidents is well known, and this article will analyze and discuss the data of serious injury or death in traffic accidents from 2006 to 2020
+ 
+ \newpage
+
+# Data
+```{r, include=FALSE}
+file <- "C:/Users/manju/OneDrive - University of Toronto/Second year/STA304/starter_folder-main/inputs/data/Motor Vehicle Collisions with KSI Data.csv"
+data <- read_csv(file)
+
+data_c <- data %>% select(-"STREET1", -"STREET2",-"OFFSET", -"TIME", -"DATE", -"WARDNUM", -"LOCCOORD", -"HOOD_ID", -"ObjectId", -"VEHTYPE", -"MANOEUVER", -"CYCCOND") 
+data_d <- data_c %>% select(-"PEDTYPE", -"ACCNUM", -"CYCLIST", -"AUTOMOBILE", -"MOTORCYCLE", -"TRUCK", -"TRSN_CITY_VEH", -"EMERG_VEH", -"DIVISION", -"INITDIR", -"DRIVACT", -"DRIVCOND", -"PEDACT", -"PEDCOND", -"CYCLISTYPE", -"POLICE_DIVISION", -"geometry", -"INVTYPE", -"_id", -"IMPACTYPE", -"FATAL_NO", -"POLICE_DIVISION", -"ACCLOC", -"TRAFFCTL", -"CYCACT", -"PEDESTRIAN", -"PASSENGER", -"NEIGHBOURHOOD", -"DISABILITY")
+
+```
+## source
+The data used in this report are from the Statistical reports of the Toronto Police Service [@KSI]. The report covers serious traffic accidents in Toronto from 2006 to 2020. Serious traffic accidents are defined as Motor Vehicle Collisions involving Killed or Seriously Injured Persons (KSI).[@KSI]  KSI data sets have been publicly available to the Toronto Police Service since 2006. The data can be found and downloaded from the Official Toronto Police Service Public Safety Data Portal or the City of Toronto Open Data Portal. The traffic data set analyzed in this report was downloaded in CSV format from the Toronto Open Data Portal. This data was last updated on May 6, 2020.
+
+## Data overview and limitation
+The data includes all traffic accidents involving more than one death or serious injury reported to the Toronto Police Service from 2006 to 2020. In the data collected, some accident sites were deliberately moved to safe areas for the sake of privacy and public safety. Therefore, the regional information in this data cannot guarantee accuracy.[@Open] The raw data included information on 16,860 accidents. This information have 56 categories that includes the time, place, process, weather conditions, vehicle conditions, passenger and driver conditions and so on. Because the raw data was too cumbersome, R [@citeR] and tidyverse[@tidy] were used to clean up and extract the necessary data. The collated information will be used in the analysis and charting process.
+The collated dataset contains 10,860 observations and 14 attributes: year, hour, zone, visibility, light, road conditions, accident level, age, injuries, speeding, dangerous driving, red light, and alcohol. The number of accidents is summarized by region, category, year and so on during data processing. An example view of the data set is shown below:
+
+```{r, echo = FALSE}
+head(data_d)
+```
+\newpage
+
+## Discussion
+### Road Impact
+
+```{r, echo = FALSE}
+data_e <- data_d %>% count(YEAR, INJURY) %>% na.omit()
+```
+
+```{r road, include = FALSE}
+data_h <- data_d %>% group_by(ROAD_CLASS, RDSFCOND) %>% summarise(n = n()) %>% na.omit() %>% filter(ROAD_CLASS != "Pending") 
+
+```
+```{r, echo = FALSE}
+knitr::kable(data_h, "pipe", col.names = c("Road Class","Surface Condition", "Number of Collision"), align = c("l", "c", "c"), caption = "Table1: Number of Collision by Road")
+
+```
+Based on the information provided by the data, all accidents were summarized according to the road conditions on which they occurred. Road conditions will be affected by two factors, one is the grade of the road, the other is the state of the road caused by the weather conditions at that time. Different road grades to a certain extent determine the width and quality of the road. Weather conditions can affect a vehicle's grip on the road.[@Jagerbrand2016Effects] For example, cars are more likely to skid in snow and wet surface. In this set of data, Table 1 shows that under the same road grade, most traffic accidents occur on dry roads, while other weather conditions also have a relatively small number of traffic accidents. However, due to the lack of complete weather statistics, this data cannot be used to show the impact of weather conditions on the likelihood of severe traffic. However, given the same weather conditions, most accidents occur in Major and Minor Arterial systems. This may be due to the greater number of roads under these two classifications. [@2017About]
+
+### Vision Impact
+
+```{r light, echo = FALSE, fig.width=8, fig.height=4}
+#filter and aggregate data based on subtype and year
+data_i <- data_d %>% count(VISIBILITY, LIGHT) 
+knitr::kable(data_i, "pipe", col.names = c("Visibility", "Light Condition", "Number of Collision"), align = c("l", "c", "c"), caption = "Table2: Number of Collision by View Condition") 
+```
+```{r, include=FALSE}
+data_d  %>% filter(LIGHT == "Dark"|LIGHT == "Dark, artificial") %>% summarise(n = n(), perc = n/16860)
+```
+When driving a motor vehicle, the driver's vision can also affect the driving condition. In Table 2\@ref(tab:light), traffic accidents are classified and summarized according to the visual field conditions at that time. The data records two factors that can affect visibility: visibility due to weather and light conditions at the time of the accident. The data showed that KSI occurred in greater numbers in dark conditions (38.17%), both natural and artificial. In dark conditions, the driver's response speed to emergencies and the visible distance of obstacles will decrease, which may lead to one of the reasons for traffic accidents. [@Jagerbrand2016Effects] As with table 1\@ref(tab:road), weather cannot be relied on as a statistical factor due to the lack of complete statistics on weather conditions.
+
+###Changing Over Year
+
+```{r, echo = FALSE}
+#plot crime counts by year and geographical division
+data_e %>% group_by(YEAR) %>%
+  ggplot(aes(x = YEAR, y = n, color = INJURY)) +
+  geom_smooth(aes(group = INJURY), se = FALSE) +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(color = "Injury type",
+       x = "Year",
+       y = "Number of Total Collisions",
+       title = "Graph1: Total Collisions by Year",
+       subtitle = "Number of total Traffic Collisions between 2006-2020") +
+  theme_minimal()
+```
+With the progress of medical treatment and the development of cities, the number of KSI incidents is gradually decreasing. Chart 1 shows the curve of the number of KSI injuries over time. Although all types of KSI increased slightly in 2017, the overall slope of the line is still negative. This data only includes KSI information in traffic accidents. We cannot infer the overall change in the number of traffic accidents from this table, but it at least shows that the number of traffic accidents resulting in serious injury or death in Toronto is decreasing year by year. In this regard, Toronto's road safety level is gradually improving.
+
+###Unsafe Driving
+The data included records for four conditions that could lead to dangerous driving, including alcohol, red light running, aggressive driving and speeding. These four factors were classified as dangerous driving factors and the occurrence of dangerous driving situations and whether accidents resulted in deaths were statistically analyzed. The results are as follows:
+
+```{r, echo=FALSE}
+#possible cause fatal or not
+ 
+data_e <- data_d %>% mutate(danger = case_when(ALCOHOL == "Yes" | SPEEDING == "Yes" | REDLIGHT=="
+                                     Yes" | AG_DRIV == "Yes" ~ "yes", TRUE ~ "no"))
+data_g <- data_e %>% count(danger, ACCLASS)
+
+``` 
+### Age Range
+```{r, echo = FALSE}
+#location
+data_f <- data_d %>% mutate(data_d, age = case_when(
+  INVAGE == "0 to 4" |INVAGE == "10 to 14"|INVAGE == "5 to 9"|INVAGE == "15 to 19" ~ "under 20", INVAGE == "20 to 24" |INVAGE == "30 to 34"|INVAGE == "25 to 29"|INVAGE == "35 to 39" ~ "20-39", INVAGE == "40 to 44" |INVAGE == "50 to 54"|INVAGE == "45 to 49"|INVAGE == "55 to 59" ~ "40-59", INVAGE == "60 to 64" |INVAGE == "70 to 74"|INVAGE == "65 to 69"|INVAGE == "75 to 79" ~ "60-79", TRUE ~ "over 80")) %>% count(age) 
+```
+```{r, include=FALSE}
+data_f %>% summarize(age = age, perc = n/16860)
+```
+In Table 3, the number of KSI accidents is divided by age group. Among them, the number of people aged 20-39 participating in KSI accidents is significantly higher than that of other age groups, accounting for 32.7% of all KSI accidents. The proportion of other age groups is as follows: The proportion of people aged 40-59 is 27.0%, those aged 60-79 13.6%, those over 80 18.6% and those under 20 8.0%. Other studies have also shown that drivers between the ages of 18 and 30 are more likely to be involved in accidents, which may have to do with driving habits and frequency[@Hu2020study].
+```{r, echo = FALSE}
+knitr::kable(data_f, "pipe", col.names = c("Age Range", "Number of Collision"), align = c("l", "c" ), caption = "Table3: Number of Collision by View Age Range")
+```
+
+```{r,echo = FALSE, fig.width = 12, fig.height = 6, out.width = '100%', fig.align = "center"}
+ggplot(data_g, aes(fill = danger, y = n, x = ACCLASS)) + geom_bar(position = "dodge", stat = "identity")+
+  labs(color = "Fatal",
+       x = "Danger factor",
+       y = "Graph2: Number of Total Collisions",
+       title = "Total Collisions by Accident consequence",) 
+```
+```{r, include = FALSE}
+data_g %>% summarise(perc = n/16860)
+```
+Graph 2 shows that there is no significant difference in the presence or absence of dangerous driving factors in traffic accidents without death, while in the number of fatal traffic accidents, the number of accidents with dangerous driving factors is higher than the number of accidents without dangerous driving factors. Overall, 53 per cent of accidents involved drivers in one or more dangerous driving situations. This suggests that dangerous driving factors do have an impact on the likelihood of an accident, and that dangerous driving is more likely to result in death.
+
+### Collision Consequences by Division
+Different districts in Toronto have different traffic conditions. In order to better understand the regional distribution of KSI, all KSI accidents are classified according to the region and the number of casualties. The statistical results are as follows:
+
+```{r, include=FALSE}
+data_j <- data_d %>% group_by(DISTRICT) %>% summarise(n = n(), perc = n/16860)
+```
+
+```{r, echo = FALSE, fig.width = 12, fig.height = 7, out.width = '100%', fig.align = "center"}
+ggplot(data_j, aes(fill = n, y = perc, x = DISTRICT)) + geom_bar(position = "dodge", stat = "identity")+
+  labs(color = "Light",
+       x = "District",
+       y = "Number of Total Collisions",
+       title = "Graph3: Number of Traffic Collisions by District",) 
+```
+ 
+
+Taken as whole, the number of KSI in Toronto and East York is much higher than that in other boroughs, which are more evenly distributed. Toronto and East York’s KSI report number accounted for 33.3%, Etobicoke York’s KSI report number account for 23.0% and North York’s KSI report number account for 19.8%, respectively. Scarborough had a KSI ratio of 22.5%. Since The area of Toronto East York is too small compared with other regions, and the data of Toronto East York is included in the data of Toronto and East York, it is not discussed here as the main content. The reason behind this figure may be that downtown Toronto is located in old Toronto, which is more prosperous and has more people and cars than other areas. At the same time, a greater police presence in downtown may be one reason why the number of KSI reported in Toronto and East York is higher than in other districts.
+
+\newpage
+
+# References
+
+
